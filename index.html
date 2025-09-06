@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Happy Birthday Urvi 🎉</title>
+  <style>
+    :root{--bg1:#ffecd2;--bg2:#fcb69f}
+    html,body{height:100%;margin:0;font-family:system-ui,Segoe UI,Roboto,'Helvetica Neue',Arial}
+    body{
+      background: linear-gradient(135deg,var(--bg1),var(--bg2));
+      overflow:hidden;
+      display:flex;align-items:center;justify-content:center;flex-direction:column;
+    }
+
+    /* plane container */
+    #planes{position:fixed;inset:0;pointer-events:none;z-index:5}
+    .plane{
+      position:absolute;will-change:transform,opacity;opacity:0.95;user-select:none;
+      font-size:28px;filter:drop-shadow(0 6px 8px rgba(0,0,0,0.12));
+      transform-origin:center;pointer-events:none; /* ensures touch/tap works on mobile */
+    }
+
+    /* hide the hint */
+    .hint { display:none; }
+
+    /* two flight directions */
+    @keyframes fly-right{
+      0%{transform:translateX(-12vw) translateY(var(--y)) rotate(var(--r));opacity:1}
+      100%{transform:translateX(112vw) translateY(calc(var(--y) + var(--drift))) rotate(calc(var(--r) + 30deg));opacity:0.95}
+    }
+    @keyframes fly-left{
+      0%{transform:translateX(112vw) translateY(var(--y)) rotate(var(--r));opacity:1}
+      100%{transform:translateX(-12vw) translateY(calc(var(--y) + var(--drift))) rotate(calc(var(--r) - 30deg));opacity:0.95}
+    }
+
+    /* headline / typewriter */
+    .message-wrap{position:relative;z-index:10;display:flex;align-items:center;justify-content:center;flex-direction:column;padding:12px}
+    h1{
+      font-size:clamp(28px,6vw,72px);margin:0;color:#641e16;text-align:center;font-weight:800;letter-spacing:1px;
+      text-shadow:0 6px 24px rgba(100,30,22,0.12);
+      opacity:0;transform:translateY(10px);transition:opacity .35s ease,transform .35s ease;
+      padding:6px 8px;background:rgba(255,255,255,0.02);border-radius:8px
+    }
+    .typed{display:inline-block;border-right:3px solid rgba(0,0,0,0.15);padding-right:6px}
+
+    /* video area: center the video and put controls below */
+    #videoWrap{margin-top:18px;z-index:12;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px}
+    video{width:min(92vw,640px);height:auto;max-height:56vh;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,0.25)}
+
+    /* small helpful hint */
+    .hint{position:fixed;left:12px;bottom:12px;font-size:13px;color:#3b2a24;background:rgba(255,255,255,0.65);padding:8px 10px;border-radius:10px;z-index:20}
+
+    /* replay button */
+    .controls{margin-top:4px;display:flex;gap:12px;justify-content:center}
+    .btn{background:#fff;border:none;padding:12px 16px;border-radius:12px;cursor:pointer;font-weight:700;min-width:96px}
+
+    /* mobile specific tweaks */
+    @media (max-width:600px){
+      body{padding:8px}
+      h1{font-size:clamp(20px,8vw,40px)}
+      .btn{padding:14px 18px;min-width:120px;font-size:16px}
+      .plane{font-size:18px}
+      video{width:94vw;max-height:46vh}
+    }
+
+    @media (prefers-reduced-motion:reduce){
+      .plane{animation:none!important}
+    }
+  </style>
+</head>
+<body>
+  <div id="planes"></div>
+
+  <div class="message-wrap">
+    <h1 id="headline"><span class="typed" id="typed"></span></h1>
+    <div id="videoWrap">
+      <!-- Place your MP4 file named animation1.mp4 in the same folder as this HTML file -->
+      <video id="birthdayVideo" controls playsinline>
+        <source src="animation1.mp4" type="video/mp4">
+        Your browser doesn't support HTML5 video.
+      </video>
+      <div class="controls">
+        <button class="btn" id="replayBtn">Replay</button>
+        <button class="btn" id="restartBtn">Restart All</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // CONFIG (adjusted dynamically for mobile)
+    const P = {
+      INITIAL_BURST_DESKTOP: 30,
+      INITIAL_BURST_MOBILE: 10,
+      SPAWN_INTERVAL_DESKTOP: 260,
+      SPAWN_INTERVAL_MOBILE: 520,
+      MAX_ACTIVE_DESKTOP: 220,
+      MAX_ACTIVE_MOBILE: 80,
+      PLANE_MIN_SIZE_DESKTOP: 18,
+      PLANE_MAX_SIZE_DESKTOP: 48,
+      PLANE_MIN_SIZE_MOBILE: 12,
+      PLANE_MAX_SIZE_MOBILE: 30,
+      FLIGHT_DURATION_MIN_DESKTOP: 6,
+      FLIGHT_DURATION_MAX_DESKTOP: 16,
+      FLIGHT_DURATION_MIN_MOBILE: 8,
+      FLIGHT_DURATION_MAX_MOBILE: 14
+    };
+
+    const isMobile = window.matchMedia('(max-width:600px)').matches || ('ontouchstart' in window && navigator.maxTouchPoints > 0);
+
+    const INITIAL_BURST = isMobile ? P.INITIAL_BURST_MOBILE : P.INITIAL_BURST_DESKTOP;
+    const SPAWN_INTERVAL_MS = isMobile ? P.SPAWN_INTERVAL_MOBILE : P.SPAWN_INTERVAL_DESKTOP;
+    const MAX_ACTIVE_PLANES = isMobile ? P.MAX_ACTIVE_MOBILE : P.MAX_ACTIVE_DESKTOP;
+    const PLANE_MIN_SIZE = isMobile ? P.PLANE_MIN_SIZE_MOBILE : P.PLANE_MIN_SIZE_DESKTOP;
+    const PLANE_MAX_SIZE = isMobile ? P.PLANE_MAX_SIZE_MOBILE : P.PLANE_MAX_SIZE_DESKTOP;
+    const FLIGHT_DURATION_MIN = isMobile ? P.FLIGHT_DURATION_MIN_MOBILE : P.FLIGHT_DURATION_MIN_DESKTOP;
+    const FLIGHT_DURATION_MAX = isMobile ? P.FLIGHT_DURATION_MAX_MOBILE : P.FLIGHT_DURATION_MAX_DESKTOP;
+
+    const PLANE_EMOJI = ["✈️","🛩️","🛫","🛬","🛩","✈️"]; // variety
+
+    const planesContainer = document.getElementById('planes');
+
+    function rand(min,max){return Math.random()*(max-min)+min}
+
+    function makePlane(){
+      const s = document.createElement('div'); s.className = 'plane';
+      s.textContent = PLANE_EMOJI[Math.floor(Math.random()*PLANE_EMOJI.length)];
+
+      const topPct = rand(-10,90); // start y offset in viewport height
+      const drift = rand(-6,6) + 'vh';
+      const rotation = rand(-25,25)+'deg';
+      const size = Math.round(rand(PLANE_MIN_SIZE,PLANE_MAX_SIZE))+'px';
+      s.style.fontSize = size;
+      s.style.setProperty('--y', topPct+'vh');
+      s.style.setProperty('--drift', drift);
+      s.style.setProperty('--r', rotation);
+
+      const direction = Math.random() > 0.5 ? 'right' : 'left';
+      const dur = rand(FLIGHT_DURATION_MIN,FLIGHT_DURATION_MAX);
+      const delay = 0; // start immediately when created
+      if(direction === 'right'){
+        s.style.animation = `fly-right ${dur}s linear ${delay}s both`;
+      } else {
+        s.style.animation = `fly-left ${dur}s linear ${delay}s both`;
+      }
+      // give slight scale variation
+      s.style.transform += ` scale(${rand(0.8,1.06)})`;
+
+      // remove element after its animation completes to free memory
+      const cleanup = () => { if(s.parentNode) s.parentNode.removeChild(s); };
+      s.addEventListener('animationend', cleanup, {once:true});
+
+      planesContainer.appendChild(s);
+
+      // safety: if too many planes, remove the oldest ones
+      if(planesContainer.children.length > MAX_ACTIVE_PLANES){
+        // remove oldest until under cap
+        while(planesContainer.children.length > MAX_ACTIVE_PLANES){
+          if(planesContainer.firstChild) planesContainer.removeChild(planesContainer.firstChild);
+          else break;
+        }
+      }
+    }
+
+    // initial burst for immediate effect
+    for(let i=0;i<INITIAL_BURST;i++) makePlane();
+
+    // continuously spawn new planes forever
+    const spawner = setInterval(makePlane, SPAWN_INTERVAL_MS);
+
+    // TYPEWRITER
+    const message = 'happy birthday urvi';
+    const typedEl = document.getElementById('typed');
+    const headline = document.getElementById('headline');
+
+    function typeMessage(){
+      headline.style.opacity = '1';
+      headline.style.transform = 'translateY(0)';
+      let i=0;
+      const speed = isMobile ? 140 : 110; // slightly slower on mobile
+      const step = ()=>{
+        if(i<=message.length){
+          typedEl.textContent = message.slice(0,i);
+          i++;
+          setTimeout(step, speed);
+        } else {
+          // finished, blink caret off after a bit
+          setTimeout(()=>{typedEl.style.borderRight='0'; showVideo();}, 600);
+        }
+      };
+      step();
+    }
+
+    // show video
+    const videoWrap = document.getElementById('videoWrap');
+    const video = document.getElementById('birthdayVideo');
+
+    function showVideo(){
+      videoWrap.style.display = 'flex';
+      // try to autoplay (may be blocked if not muted)
+      const playPromise = video.play();
+      if(playPromise !== undefined){
+        playPromise.catch(()=>{
+          // autoplay failed (likely because browser requires interaction). Do nothing — user can press play.
+        });
+      }
+    }
+
+    // orchestrate sequence: no fading/removal of planes (we spawn continuously)
+    const PLANE_SHOW_TIME = isMobile ? 2800 : 6000; // show typing earlier on phones for snappier feel
+    setTimeout(()=>{ typeMessage(); }, PLANE_SHOW_TIME);
+
+    // Controls
+    document.getElementById('replayBtn').addEventListener('click', ()=>{
+      // try to play video from start
+      if(video.readyState > 0){ video.currentTime = 0; video.play().catch(()=>{}); }
+      else alert('Make sure a file named "animation1.mp4" is in the same folder as this HTML file.');
+    });
+    document.getElementById('restartBtn').addEventListener('click', ()=>{
+      // reset everything by reloading page
+      location.reload();
+    });
+
+    // accessibility: if user prefers reduced motion, reveal message quickly and show video
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    if(mq && mq.matches){
+      // stop spawning and show message & video immediately
+      clearInterval(spawner);
+      headline.style.opacity=1;
+      typedEl.textContent = message;
+      showVideo();
+    }
+
+    // If device orientation/size changes, re-evaluate mobile settings (basic responsiveness)
+    window.addEventListener('resize', ()=>{
+      // if user resizes across mobile threshold, a full reload gives stable settings
+      // avoid auto reloading on small resizes; only reload when crossing 600px boundary
+      const nowMobile = window.matchMedia('(max-width:600px)').matches;
+      if(nowMobile !== isMobile) location.reload();
+    });
+  </script>
+</body>
+</html>
