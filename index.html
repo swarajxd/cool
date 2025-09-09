@@ -90,20 +90,13 @@
   <script>
     // CONFIG (adjusted dynamically for mobile)
     const P = {
-      INITIAL_BURST_DESKTOP: 30,
-      INITIAL_BURST_MOBILE: 10,
-      SPAWN_INTERVAL_DESKTOP: 260,
-      SPAWN_INTERVAL_MOBILE: 520,
-      MAX_ACTIVE_DESKTOP: 220,
-      MAX_ACTIVE_MOBILE: 80,
-      PLANE_MIN_SIZE_DESKTOP: 18,
-      PLANE_MAX_SIZE_DESKTOP: 48,
-      PLANE_MIN_SIZE_MOBILE: 12,
-      PLANE_MAX_SIZE_MOBILE: 30,
-      FLIGHT_DURATION_MIN_DESKTOP: 6,
-      FLIGHT_DURATION_MAX_DESKTOP: 16,
-      FLIGHT_DURATION_MIN_MOBILE: 8,
-      FLIGHT_DURATION_MAX_MOBILE: 14
+      INITIAL_BURST_DESKTOP: 60,   // double the starting planes
+INITIAL_BURST_MOBILE: 20,    // more on phones too
+SPAWN_INTERVAL_DESKTOP: 150, // spawn new planes faster
+SPAWN_INTERVAL_MOBILE: 300, 
+MAX_ACTIVE_DESKTOP: 400,     // allow more planes in DOM
+MAX_ACTIVE_MOBILE: 150,
+
     };
 
     const isMobile = window.matchMedia('(max-width:600px)').matches || ('ontouchstart' in window && navigator.maxTouchPoints > 0);
